@@ -66,29 +66,17 @@ def main():
     print("First 7 features chosen by the wrapper:", picked7)
     print("Paper's 7 features:", SEL7)
 
-    # (5) write the reconstructed SelectedFeature_WaveletDenoised workbook
-    cols7 = SEL7 + ["OPR"]
-    with pd.ExcelWriter(OUT / "recon_03_selected.xlsx") as w:
-        train_dn[cols7].to_excel(w, sheet_name="Train", index=False)
-        test_dn[cols7].to_excel(w, sheet_name="Test", index=False)
-    print("Wrote recon_03_selected.xlsx (7-feature denoised dataset).")
-
-    # (6) fidelity vs the supplied SD file (align on the F-12 startup head).
-    sd_tr = pd.read_excel(C.DATA_XLSX, sheet_name="Train")
-    rows = []
-    n = min(len(sd_tr), len(train_dn))
-    for col in ["OSH", "ADP", "ADTemp", "AWHP", "DCS", "OPR"]:
-        a = sd_tr[col].to_numpy(float)[:n]
-        b = train_dn[col].to_numpy(float)[:n]
-        m = np.isfinite(a) & np.isfinite(b)
-        corr = float(np.corrcoef(a[m], b[m])[0, 1]) if m.sum() > 2 else np.nan
-        rmse = float(np.sqrt(np.mean((a[m] - b[m]) ** 2)))
-        rows.append({"column": col, "pearson_r": round(corr, 4),
-                     "rmse_vs_SD": round(rmse, 4)})
-    fid = pd.DataFrame(rows).set_index("column")
-    save_table(fid, "preprocess_fidelity")
-    print("\nFidelity of reconstruction vs supplied SD (head-aligned):")
-    print(fid.to_string())
+    # (5) write the reconstructed SelectedFeature_WaveletDenoised workbooks.
+    # recon_SD.xlsx is the canonical reconstruction (same sheets + column order
+    # as the supplied SD file); recon_03_selected.xlsx kept as an alias.
+    cols7 = list(SEL7) + ["OPR"]                     # SD column order
+    for fname in ("recon_SD.xlsx", "recon_03_selected.xlsx"):
+        with pd.ExcelWriter(OUT / fname) as w:
+            train_dn[cols7].to_excel(w, sheet_name="Train", index=False)
+            test_dn[cols7].to_excel(w, sheet_name="Test", index=False)
+    print(f"Wrote recon_SD.xlsx (Train {len(train_dn)}, Test {len(test_dn)}, "
+          f"cols {cols7}).")
+    print("Validate with: python scripts/00c_validate_reconstruction.py")
 
 
 if __name__ == "__main__":

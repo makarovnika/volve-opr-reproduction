@@ -1,12 +1,12 @@
 | n | added | subset | RMSE | R2 |
 | --- | --- | --- | --- | --- |
-| 1 | Time | ['Time'] | 19.7179 | -0.3113 |
-| 2 | DCS | ['Time', 'DCS'] | 11.5502 | 0.5501 |
-| 3 | AW | ['Time', 'DCS', 'AW'] | 10.5577 | 0.6241 |
-| 4 | ADP | ['Time', 'DCS', 'AW', 'ADP'] | 11.8236 | 0.5285 |
-| 5 | ACS | ['Time', 'DCS', 'AW', 'ADP', 'ACS'] | 15.5464 | 0.1849 |
-| 6 | OSH | ['Time', 'DCS', 'AW', 'ADP', 'ACS', 'OSH'] | 17.8506 | -0.0747 |
-| 7 | ADT | ['Time', 'DCS', 'AW', 'ADP', 'ACS', 'OSH', 'ADT'] | 22.5843 | -0.7202 |
-| 8 | AWHP | ['Time', 'DCS', 'AW', 'ADP', 'ACS', 'OSH', 'ADT', 'AWHP'] | 53.7363 | -8.7388 |
-| 9 | AWHT | ['Time', 'DCS', 'AW', 'ADP', 'ACS', 'OSH', 'ADT', 'AWHP', 'AWHT'] | 65.3933 | -13.4224 |
-| 10 | ADTemp | ['Time', 'DCS', 'AW', 'ADP', 'ACS', 'OSH', 'ADT', 'AWHP', 'AWHT', 'ADTemp'] | 78.1206 | -19.5827 |
+| 1 | Time | ['Time'] | 18.5086 | -0.5132 |
+| 2 | DCS | ['Time', 'DCS'] | 14.3624 | 0.0888 |
+| 3 | ADP | ['Time', 'DCS', 'ADP'] | 19.2459 | -0.6362 |
+| 4 | AW | ['Time', 'DCS', 'ADP', 'AW'] | 19.9691 | -0.7614 |
+| 5 | OSH | ['Time', 'DCS', 'ADP', 'AW', 'OSH'] | 24.9536 | -1.7505 |
+| 6 | ADTemp | ['Time', 'DCS', 'ADP', 'AW', 'OSH', 'ADTemp'] | 20.9252 | -0.9341 |
+| 7 | AWHT | ['Time', 'DCS', 'ADP', 'AW', 'OSH', 'ADTemp', 'AWHT'] | 20.0797 | -0.7810 |
+| 8 | ACS | ['Time', 'DCS', 'ADP', 'AW', 'OSH', 'ADTemp', 'AWHT', 'ACS'] | 23.8701 | -1.5169 |
+| 9 | ADT | ['Time', 'DCS', 'ADP', 'AW', 'OSH', 'ADTemp', 'AWHT', 'ACS', 'ADT'] | 22.5030 | -1.2368 |
+| 10 | AWHP | ['Time', 'DCS', 'ADP', 'AW', 'OSH', 'ADTemp', 'AWHT', 'ACS', 'ADT', 'AWHP'] | 79.3800 | -26.8338 |

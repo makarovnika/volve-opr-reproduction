@@ -4,10 +4,10 @@
   "features": [
     {
       "id": "raw-preprocessing",
-      "name": "Reconstruct preprocessing from raw Volve export (date-aligned aggregation -> denoised -> 7 features)",
+      "name": "Reconstruct + VALIDATE the training dataset from raw Volve export",
       "status": "done",
-      "verification": "python scripts/00_preprocess.py",
-      "evidence": "src/raw_pipeline.aggregate_by_date; decoded SD as date-aligned SUM over 3 wells (AW=active-well count, OSH=sum hours, OPR=sum per-well rates); near-exact fidelity vs SD (r=0.976-0.9999 per feature); feature selection recovers the paper's exact 7 features + drops ADT/AWHT/ACS; Fig 5 reproduces the 1285 spike."
+      "verification": "python scripts/00_preprocess.py && python scripts/00c_validate_reconstruction.py",
+      "evidence": "Date-aligned aggregation; denoise params in config.DENOISE/DENOISE_FEATURES (sweep-chosen); writes recon_SD.xlsx (2176/716); 00c PASS (all cols corr>=0.97, OPR Train 0.989/Test 0.972); 6/7 features match paper (AWHP<->AWHT tied); DATASET_SOURCE flag trains on it (scripts/09). Residuals documented in REPRODUCTION_NOTES sec 5b."
     },
     {
       "id": "data-loading",

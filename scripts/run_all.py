@@ -45,6 +45,7 @@ def main():
     if RAW:
         _run("00 Reconstruct preprocessing from raw", step("00_preprocess"))
         _run("00b Reconstruct denoising regimes", step("00b_denoising"))
+        _run("00c Validate reconstruction vs SD", step("00c_validate_reconstruction"))
     _run("01 EDA", step("01_explore_data"))
     _run("02 Feature selection", step("02_feature_selection"))
     if FULL:

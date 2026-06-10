@@ -27,7 +27,7 @@ from src import io_utils as IO
 from src.data import build_dataset
 from src.train import fit_model
 
-RECON = C.RESULTS / "preprocessing" / "recon_03_selected.xlsx"
+RECON = C.RESULTS / "preprocessing" / "recon_SD.xlsx"
 
 
 def _train_all(xlsx, label):
@@ -60,7 +60,9 @@ def main():
             "R2_recon": round(rc[m]["R2"], 4),
         }
     cmp = pd.DataFrame(rows).T
+    cmp["dRMSE"] = (cmp["RMSE_recon"] - cmp["RMSE_SD"]).round(3)
     IO.save_table(cmp, "cmp_recon_vs_sd")
+    IO.save_table(cmp, "supplied_vs_reconstructed_metrics")   # Task 2.8 name
     print("\nReconstructed vs SD-file test metrics:")
     print(cmp.to_string())
 

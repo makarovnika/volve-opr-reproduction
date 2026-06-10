@@ -48,6 +48,43 @@ FEATURE_LABELS = {
 }
 
 # --------------------------------------------------------------------------- #
+# Raw -> SD reconstruction (data-preparation, src/raw_pipeline.py)
+# --------------------------------------------------------------------------- #
+# Wavelet denoising parameters — single source of truth (no hard-coding in
+# modules). Chosen by family×level×rule×scale sweeps that MAXIMISE the per-column
+# Pearson correlation of the reconstructed denoised signals vs the supplied SD
+# file. The target OPR needs heavier smoothing than the exogenous features (the
+# SD test well is much smoother), so the two use different settings:
+#   DENOISE (OPR)          db6 / L4 / sqtwolog / x6.0
+#     -> corr vs SD OPR: Train 0.989, Test 0.972 (autocorr Test 0.98 ~ SD 0.99)
+#   DENOISE_FEATURES       db4 / L6 / sqtwolog / x2.0
+#     -> every feature corr >= 0.97 on both subsets (most >= 0.99)
+DENOISE = {
+    "wavelet": "db6",
+    "level": 4,
+    "rule": "sqtwolog",      # rigrsure | sqtwolog | heursure | minimaxi
+    "scale": 6.0,
+    "mode": "soft",
+}
+DENOISE_FEATURES = {
+    "wavelet": "sym8",
+    "level": 6,
+    "rule": "rigrsure",      # SURE soft-threshold — preserves the features so the
+    "scale": 1.0,            # 10->7 selection recovers exactly the paper's set
+    "mode": "soft",
+}
+
+# AW column reconstruction: the SD file stores the per-day ACTIVE-WELL COUNT
+# (Σ WORK over the 3 wells -> {0,1,2,3}), not the 0/1 single-well status the
+# paper text documents. 'count' reproduces the file; 'status' follows the text.
+AW_MODE = "count"            # count | status
+
+# Which dataset the training pipeline loads.
+#   'supplied'      -> the provided SD xlsx (default; what the paper used)
+#   'reconstructed' -> results/preprocessing/recon_SD.xlsx, rebuilt from raw
+DATASET_SOURCE = "supplied"
+
+# --------------------------------------------------------------------------- #
 # Reproducibility
 # --------------------------------------------------------------------------- #
 SEED = 42

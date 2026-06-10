@@ -133,30 +133,24 @@ def clean_frame(df: pd.DataFrame) -> pd.DataFrame:
 DENOISE_COLS = ["OSH", "ADP", "ADTemp", "ADT", "ACS", "AWHP", "AWHT", "DCS", "OPR"]
 
 
-def denoise_frame(df: pd.DataFrame, wavelet: str = "db4",
-                  method: str = "approx", level: int = 2) -> pd.DataFrame:
-    """Denoise the signal columns.
+def denoise_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Wavelet-denoise the signal columns using the parameters in
+    ``config.DENOISE`` (target OPR, heavier) and ``config.DENOISE_FEATURES``
+    (exogenous features, lighter) — chosen to MAXIMISE the per-column
+    correlation with the supplied SD file. Single source of truth; no hard-coded
+    params here.
 
-    Default = approximation-only wavelet at level 2 — this matches the SD file's
-    OPR smoothness (lag-1 autocorr ≈ 0.98–0.99, persistence floor ≈ 3–4 m³/day),
-    which is what produces the paper's low headline RMSE. A lighter SURE
-    soft-threshold (``method='soft'``) leaves the OPR at autocorr ≈ 0.93 and a
-    persistence floor ≈ 8, so the one-step models cannot reach the paper's regime.
+    (NB: the §7 'approx-only' OPR exploration — even heavier smoothing that lets
+    the one-step models reach the paper's ~2.7 regime — is a separate concern in
+    `scripts/00b_denoising.py`/`preprocessing.wavelet_approx`, not the
+    SD-faithful reconstruction produced here.)
     """
-    from .preprocessing import wavelet_approx
     out = df.copy()
     for col in DENOISE_COLS:
         if col not in out:
             continue
-        sig = out[col].to_numpy(dtype=float)
-        # The SD file denoises the TARGET (OPR) heavily — approximation-only,
-        # giving autocorr ≈ 0.98 (the persistence-floor / headline-RMSE driver) —
-        # but the exogenous features only lightly (soft threshold preserves them,
-        # keeping per-feature fidelity ≥ 0.98 vs the SD file).
-        if method == "approx" and col == "OPR":
-            out[col] = wavelet_approx(sig, wavelet=wavelet, level=level)
-        else:
-            out[col] = wavelet_denoise(sig, wavelet="sym8")
+        params = C.DENOISE if col == "OPR" else C.DENOISE_FEATURES
+        out[col] = wavelet_denoise(out[col].to_numpy(dtype=float), **params)
     return out
 
 
@@ -202,7 +196,10 @@ def aggregate_by_date(clean: bool = False) -> pd.DataFrame:
 
     g = allw.groupby("DATE")
     agg = pd.DataFrame({c: g[c].sum() for c in _SUM_COLS})
-    agg["AW"] = g["_active"].sum()
+    count = g["_active"].sum()                      # active-well count {0,1,2,3}
+    # AW reconstruction (config.AW_MODE): 'count' reproduces the SD file
+    # (Σ WORK over the 3 wells); 'status' is the paper-text 0/1 field indicator.
+    agg["AW"] = count if C.AW_MODE == "count" else (count > 0).astype(int)
     # OPR(date) = sum of per-well rates (verified ≈ SD: mean 166 ≈ AW(1.94) ×
     # total-vol/total-osh; sum-of-rates reproduces it, total/total does not).
     agg["OPR"] = g["OPR"].sum()

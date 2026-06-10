@@ -151,27 +151,41 @@ The original source files were later supplied and added to `input data/`:
   `ON_STREAM_HRS→OSH, AVG_DOWNHOLE_PRESSURE→ADP, AVG_DOWNHOLE_TEMPERATURE→ADTemp,
   AVG_DP_TUBING→ADT, AVG_CHOKE_SIZE_P→ACS, AVG_WHP_P→AWHP, AVG_WHT_P→AWHT,
   DP_CHOKE_SIZE→DCS, WORK→AW`.
-* **Feature reduction** order: 10 vars → drop annulus (NM_16Apr) → selection
-  keeps **7** (`Time, ADTemp, AW, OSH, DCS, AWHP, ADP`), dropping `ADT, AWHT,
-  ACS` (Table 1 features 8–10) — **matches the paper exactly**.
-
 **The SD file is a date-aligned aggregation** (`raw_pipeline.aggregate_by_date`,
-`compile_dataset` — first 2176 dates = train, next 716 = test):
+`compile_dataset` — first 2176 dates = train, next 716 = test; validated by
+`scripts/00c_validate_reconstruction.py` → `reconstruction_fidelity.csv`):
 
 * one row per date; `OSH/ADP/ADTemp/AWHP/DCS = Σ` over the 3 wells;
-  `AW = Σ` active-well count; `OPR = Σ` per-well rates; F-12's dead downhole
-  gauges are **not** imputed (contribute raw zeros).
-* **Reconstruction fidelity vs the supplied SD `Train` (head-aligned):**
+  `AW = Σ` active-well count (`config.AW_MODE='count'`); `OPR = Σ` per-well
+  rates; F-12's dead downhole gauges are **not** imputed (verified: imputing
+  *worsens* ADP/ADTemp corr — `tests/test_denoise_regime.py`).
+* **Denoising parameters live in `config.DENOISE` / `DENOISE_FEATURES`** (single
+  source of truth), chosen by a family×level×rule×scale sweep maximising the
+  per-column corr vs SD: OPR = db6/L4/**sqtwolog**/×6 (heavy — the SD test well
+  is very smooth); features = sym8/**rigrsure**/soft (light — preserves them).
+* **Per-column fidelity vs the supplied SD file (Pearson r):**
 
-  | feature | OSH | ADP | ADTemp | AWHP | DCS | AW | OPR |
-  |---------|----:|----:|-------:|-----:|----:|---:|----:|
-  | Pearson r | 0.9999 | 0.988 | 0.991 | 0.990 | 0.976 | 0.998 | 0.995 |
+  | subset | OSH | ADP | ADTemp | AWHP | DCS | AW | OPR |
+  |--------|----:|----:|-------:|-----:|----:|---:|----:|
+  | Train | 1.000 | 0.988 | 0.991 | 0.990 | 0.976 | 0.998 | **0.989** |
+  | Test  | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | **0.972** |
 
-  (was r ≈ 0.81 / 0.02–0.56 for the earlier per-well-stacking attempt.)
+  Mandatory ≥ 0.97 met on **all** columns/subsets (was r ≈ 0.81 / 0.02–0.56 for
+  the earlier per-well-stacking attempt).
+* **Feature selection (10→7)** recovers the paper's **6 core** features
+  (`Time, OSH, ADP, ADTemp, DCS, AW`) and drops `ADT, ACS` stably; the **7th
+  slot is a statistical tie between AWHP and AWHT** — the exogenous features cap
+  at R² ≈ 0.3 for OPR, so AWHP vs AWHT differ by < surrogate noise (LSTM val
+  RMSE 76.1 vs 74.4, seed std ≈ 15). The paper's exact 7th feature (AWHP) is
+  therefore not robustly reproducible; overlap with the paper's set is 6/7.
 
-**Not fully recoverable** (small residuals only): the exact wavelet parameters
-and the exact 2892-of-3056 date window (ad-hoc cleaning) — these leave the
-feature means within ~1 % and the correlations ≥ 0.976.
+**Residual gaps (documented, not hidden):**
+* **Test OPR corr = 0.972 < 0.98 target** (mandatory 0.97 met). The SD test well
+  is denoised more heavily than any single rule reproduces from the raw test;
+  closing it would need per-subset wavelet params not in the supplied files.
+* Exact wavelet params and the exact 2892-of-3056 date window (ad-hoc cleaning)
+  remain unknown — these leave the feature means within ~1 % and the
+  correlations ≥ 0.976.
 
 ### Denoising regimes (`scripts/00b_denoising.py`)
 
@@ -251,22 +265,28 @@ Training the six models on the raw-data reconstruction (`recon_03_selected.xlsx`
 and comparing to the supplied SD file **closes the loop and identifies the
 denoising as the headline lever**:
 
-| Model | RMSE (SD file) | RMSE (reconstruction) | Paper |
-|-------|---------------:|----------------------:|------:|
-| LSTM-COA | 5.14 | **2.77** | 2.15 |
-| LSTM-PSO | 5.15 | **2.72** | 2.40 |
-| CNN-COA | 6.46 | 4.49 | 2.73 |
-| CNN-PSO | 6.26 | 4.63 | 3.15 |
-| CNN | 5.91 | 4.59 | 8.64 |
-| LSTM | 5.25 | 5.22 | 7.43 |
+With the **SD-faithful reconstruction** (`recon_SD.xlsx`, `config.DENOISE`),
+training reproduces the SD-file results — the reconstruction is faithful enough
+that the models behave the same (`supplied_vs_reconstructed_metrics.csv`):
 
-With the **correct heavy approximation-only OPR denoising** (autocorr ≈ 0.98),
-the reconstruction's **LSTM hybrids reach RMSE ≈ 2.7 — within ~25 % of the paper's
-2.15/2.40 and closer than the supplied SD file itself** (5.14). Conversely, with
-a light soft-threshold (autocorr ≈ 0.93) the same models only reach ≈ 9
-(persistence floor 8.4). This pins the paper's headline accuracy to one
-preprocessing choice: **how aggressively the OPR target is smoothed.** The LSTM
-hybrids remain the top two in both cases (COA/PSO are near-tied at ~2.7–2.8).
+| Model | RMSE (SD file) | RMSE (recon_SD) | ΔRMSE | Paper |
+|-------|---------------:|----------------:|------:|------:|
+| **LSTM-COA** | 5.14 | 5.29 | +0.15 | 2.15 |
+| LSTM-PSO | 5.15 | 5.29 | +0.14 | 2.40 |
+| LSTM | 5.25 | 5.44 | +0.19 | 7.43 |
+| CNN | 5.91 | 6.63 | +0.71 | 8.64 |
+| CNN-COA | 6.46 | 6.40 | −0.05 | 2.73 |
+| CNN-PSO | 6.26 | 6.04 | −0.22 | 3.15 |
+
+**Best model matches (LSTM-COA), ranking nearly identical, ΔRMSE ≤ 0.7** — the
+end-to-end pipeline runs from raw Volve to the same model results.
+
+Separately, an **even heavier approximation-only OPR denoising** (autocorr ≈ 0.98,
+`preprocessing.wavelet_approx`, `scripts/00b`) drops the LSTM hybrids to RMSE
+≈ 2.7 — within ~25 % of the paper's 2.15/2.40 — while a very light soft-threshold
+(autocorr ≈ 0.93) only reaches ≈ 9. This pins the paper's headline accuracy to
+one preprocessing choice: **how aggressively the OPR target is smoothed**, not
+the model.
 
 ## 8. Honest accuracy ceiling (Tasks 1–2, 6) — what is and isn't a fair target
 

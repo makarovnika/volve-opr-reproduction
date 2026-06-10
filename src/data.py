@@ -176,17 +176,33 @@ def detect_well_boundary(train_df: pd.DataFrame) -> int:
     return lo + int(np.argmax(jumps)) + 1
 
 
+def _resolve_source(xlsx):
+    """Pick the workbook: explicit ``xlsx`` wins; otherwise ``config.DATASET_SOURCE``
+    ('supplied' -> SD file, 'reconstructed' -> recon_SD.xlsx)."""
+    if xlsx is not None:
+        return xlsx
+    if getattr(C, "DATASET_SOURCE", "supplied") == "reconstructed":
+        recon = C.RESULTS / "preprocessing" / "recon_SD.xlsx"
+        if not recon.exists():
+            raise FileNotFoundError(
+                f"{recon} missing — run scripts/00_preprocess.py first "
+                "(DATASET_SOURCE='reconstructed').")
+        return recon
+    return C.DATA_XLSX
+
+
 def build_dataset(features=None, seq_len: int = C.SEQ_LEN,
                   use_lagged_target: bool = C.USE_LAGGED_TARGET,
-                  xlsx=C.DATA_XLSX) -> Dataset:
+                  xlsx=None) -> Dataset:
     """Load, normalize (separately per subset) and window the dataset.
 
     ``features`` lets the NSGA-II feature-selection experiment request a subset;
-    defaults to all seven selected features.  ``xlsx`` selects the workbook
-    (defaults to the supplied SD file; pass the reconstructed file to validate
-    end-to-end reproducibility from the raw-data reconstruction).
+    defaults to all seven selected features.  ``xlsx=None`` resolves to the
+    supplied SD file or the reconstructed file per ``config.DATASET_SOURCE``;
+    pass an explicit path to override.
     """
     features = features or C.FEATURES
+    xlsx = _resolve_source(xlsx)
     tr = load_raw("Train", xlsx=xlsx)
     te = load_raw("Test", xlsx=xlsx)
 

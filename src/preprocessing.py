@@ -16,36 +16,77 @@ import pywt
 
 
 def _sure_threshold(coeffs: np.ndarray) -> float:
-    """SURE-optimal threshold for a vector of detail coefficients."""
+    """SURE-optimal threshold for a vector of (noise-normalized) coefficients
+    — MATLAB 'rigrsure'.  risk(k) = (n - 2k + Σ_{i≤k} sx2_i + (n-k)·sx2_k)/n."""
     n = coeffs.size
     if n == 0:
         return 0.0
-    # Standard SURE risk curve (matches MATLAB 'rigrsure').  For sorted ascending
-    # squared coefficients sx2 and candidate threshold t^2 = sx2[k]:
-    #   risk(k) = (n - 2k + sum_{i<=k} sx2_i + (n-k)*sx2_k) / n
     sx2 = np.sort(np.abs(coeffs)) ** 2
     cumsum = np.cumsum(sx2)
     i = np.arange(1, n + 1)
     risks = (n - 2 * i + cumsum + (n - i) * sx2) / n
-    best = int(np.argmin(risks))
-    return float(np.sqrt(sx2[best]))
+    return float(np.sqrt(sx2[int(np.argmin(risks))]))
 
 
-def wavelet_denoise(signal: np.ndarray, wavelet: str = "sym8",
-                    level: int | None = None, mode: str = "soft") -> np.ndarray:
-    """Denoise a 1-D signal with multi-level wavelet soft thresholding.
+def _universal_threshold(n: int) -> float:
+    """sqtwolog: t = sqrt(2 ln n) (in noise-normalized units)."""
+    return float(np.sqrt(2.0 * np.log(n))) if n > 1 else 0.0
 
-    Uses a SURE-adaptive threshold scaled by a robust noise estimate (median
-    absolute deviation of the finest detail band).  Returns a signal of the
-    same length as the input.
+
+def _minimax_threshold(n: int) -> float:
+    """minimaxi: minimax threshold (noise-normalized)."""
+    if n <= 32:
+        return 0.0
+    return float(0.3936 + 0.1829 * np.log2(n))
+
+
+def _threshold_value(detail: np.ndarray, sigma: float, rule: str) -> float:
+    """Physical threshold for one detail band under the chosen MATLAB rule."""
+    n = detail.size
+    normed = detail / sigma if sigma > 0 else detail
+    s = sigma if sigma > 0 else 1.0
+    if rule == "rigrsure":
+        return _sure_threshold(normed) * s
+    if rule == "sqtwolog":
+        return _universal_threshold(n) * s
+    if rule == "minimaxi":
+        return _minimax_threshold(n) * s
+    if rule == "heursure":               # choose sure vs universal by energy
+        energy = float(np.sum(normed ** 2))
+        crit = (np.log2(n) ** 1.5) / np.sqrt(n) if n > 1 else 0.0
+        if (energy - n) / n < crit:
+            return _universal_threshold(n) * s
+        return _sure_threshold(normed) * s
+    raise ValueError(f"unknown threshold rule: {rule}")
+
+
+def wavelet_denoise(signal: np.ndarray, wavelet: str | None = None,
+                    level: int | None = None, mode: str | None = None,
+                    rule: str | None = None, scale: float | None = None
+                    ) -> np.ndarray:
+    """Multi-level wavelet thresholding denoiser.
+
+    All defaults come from ``config.DENOISE`` (single source of truth); pass
+    explicit args only to override. ``rule`` selects the MATLAB threshold
+    selection ('rigrsure' SURE, 'sqtwolog' universal, 'heursure', 'minimaxi');
+    ``scale`` multiplies the threshold; the noise std is the MAD of the finest
+    detail band. Returns a signal the same length as the input.
     """
+    from . import config as C
+    d = C.DENOISE
+    wavelet = d["wavelet"] if wavelet is None else wavelet
+    mode = d["mode"] if mode is None else mode
+    rule = d["rule"] if rule is None else rule
+    scale = d["scale"] if scale is None else scale
+    if level is None:
+        level = d.get("level")
+
     signal = np.array(signal, dtype=float)        # writable copy (pywt needs it)
     n = signal.size
-    if level is None:
-        level = min(pywt.dwt_max_level(n, pywt.Wavelet(wavelet).dec_len), 6)
+    max_lvl = pywt.dwt_max_level(n, pywt.Wavelet(wavelet).dec_len)
+    level = max_lvl if level is None else min(level, max_lvl)
 
     coeffs = pywt.wavedec(signal, wavelet, level=level)
-    # Robust noise std from finest details.
     sigma = np.median(np.abs(coeffs[-1])) / 0.6745 if coeffs[-1].size else 0.0
 
     new = [coeffs[0]]
@@ -53,12 +94,10 @@ def wavelet_denoise(signal: np.ndarray, wavelet: str = "sym8",
         if c.size == 0:
             new.append(c)
             continue
-        normed = c / sigma if sigma > 0 else c
-        t = _sure_threshold(normed) * (sigma if sigma > 0 else 1.0)
+        t = _threshold_value(c, sigma, rule) * scale
         new.append(pywt.threshold(c, t, mode=mode))
 
-    rec = pywt.waverec(new, wavelet)
-    return rec[:n]
+    return pywt.waverec(new, wavelet)[:n]
 
 
 def wavelet_approx(signal: np.ndarray, wavelet: str = "db4",

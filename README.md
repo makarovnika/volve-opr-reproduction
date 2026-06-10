@@ -40,6 +40,7 @@ python scripts/run_all.py --raw        # include it in the full run
 |------|--------|----------|
 | Preprocess (raw→final) | `scripts/00_preprocess.py` | Fig 5, recon_*.xlsx, fidelity vs SD |
 | Denoising regimes | `scripts/00b_denoising.py` | Fig 5b, denoising characterization (soft vs approx) |
+| Validate reconstruction | `scripts/00c_validate_reconstruction.py` | reconstruction_fidelity.csv + PASS/FAIL (recon_SD vs SD) |
 | EDA | `scripts/01_explore_data.py` | Fig 2, Fig 4, data summary |
 | Feature selection | `scripts/02_feature_selection.py` | Table 1, Fig 6 |
 | Stage-1 PSO (opt.) | `scripts/00_stage1_structure.py` | Fig 7 |
