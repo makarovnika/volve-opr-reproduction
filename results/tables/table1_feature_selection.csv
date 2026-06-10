@@ -1,0 +1,8 @@
+No.,Selected features,RMSE (m3/day),R2
+1,Time,92.0516,0.42628
+2,"Time, ADTemp",78.7592,0.58001
+3,"Time, ADTemp, AW",76.087,0.60802
+4,"Time, OSH, ADTemp, AW",76.0637,0.60826
+5,"Time, OSH, ADTemp, DCS, AW",76.0158,0.60876
+6,"Time, OSH, ADTemp, AWHP, DCS, AW",75.2642,0.61646
+7,"Time, OSH, ADP, ADTemp, AWHP, DCS, AW",81.0735,0.55496

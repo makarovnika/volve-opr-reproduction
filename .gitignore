@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Regenerable artifacts
+results/models/*.pt
+results/models/*.npz
+results/models/*.json
+# reconstructed xlsx, regenerable via scripts/00
+results/preprocessing/
+
+# OS / junk
+.DS_Store
+Thumbs.db
+*.stackdump
+
+# Copyrighted paper PDF (Elsevier, all rights reserved) — kept local only
+input data/*.pdf
+
+# Keep input data and generated figures/tables tracked intentionally if desired

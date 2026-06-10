@@ -1,0 +1,8 @@
+|  | paper_rank | mine_rank |
+| --- | --- | --- |
+| #1 | LSTM-COA | LSTM-COA |
+| #2 | LSTM-PSO | LSTM-PSO |
+| #3 | CNN-COA | CNN-PSO |
+| #4 | CNN-PSO | CNN-COA |
+| #5 | LSTM | LSTM |
+| #6 | CNN | CNN |

@@ -1,0 +1,6 @@
+series,n,std,lag1_autocorr,min,max,var_retained_%
+raw OPR (F-14),2724,54.5,0.9631,0.0,324.05,100.0
+soft-threshold (SD-style),2724,54.47,0.9638,0.37,323.41,99.9
+approx-only (NoiseFree-style),2724,53.03,0.9998,4.2,216.44,94.7
+TARGET NoiseFree file,1856,32.63,0.9997,8.16,129.6,
+TARGET SD file (paper),2176,111.43,0.9054,0.0,1285.66,

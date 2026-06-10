@@ -1,0 +1,130 @@
+{
+  "project": "Volve OPR prediction — reproduction of Fuel 406 (2026) 136847",
+  "updated": "2026-06-09",
+  "features": [
+    {
+      "id": "raw-preprocessing",
+      "name": "Reconstruct preprocessing from raw Volve export (date-aligned aggregation -> denoised -> 7 features)",
+      "status": "done",
+      "verification": "python scripts/00_preprocess.py",
+      "evidence": "src/raw_pipeline.aggregate_by_date; decoded SD as date-aligned SUM over 3 wells (AW=active-well count, OSH=sum hours, OPR=sum per-well rates); near-exact fidelity vs SD (r=0.976-0.9999 per feature); feature selection recovers the paper's exact 7 features + drops ADT/AWHT/ACS; Fig 5 reproduces the 1285 spike."
+    },
+    {
+      "id": "data-loading",
+      "name": "Load & normalize preprocessed dataset",
+      "status": "done",
+      "verification": "python -c \"from src.data import build_dataset; d=build_dataset(); print(d.X_train.shape)\"",
+      "evidence": "Train (2176,12,8), Test (716,12,8); separate min-max scalers per subset."
+    },
+    {
+      "id": "wavelet-denoise",
+      "name": "Wavelet denoising (SURE soft-threshold)",
+      "status": "done",
+      "verification": "src/preprocessing.py:wavelet_denoise",
+      "evidence": "Provided for completeness; input data already denoised."
+    },
+    {
+      "id": "feature-selection",
+      "name": "NSGA-II / LSTM dual-objective feature selection (Table 1, Fig 6)",
+      "status": "done",
+      "verification": "python scripts/02_feature_selection.py",
+      "evidence": "Pareto front over 7 features; RMSE/R2 vs feature-count curve."
+    },
+    {
+      "id": "models",
+      "name": "LSTM & CNN forecasters with partial-anchor head",
+      "status": "done",
+      "verification": "src/models.py",
+      "evidence": "One-step-ahead; anchor beta=0.5 carries OPR(t-1)."
+    },
+    {
+      "id": "optimizers",
+      "name": "PSO, COA, NSGA-II",
+      "status": "done",
+      "verification": "src/optimizers/",
+      "evidence": "Generic minimizers; convergence histories for Figs 7-8."
+    },
+    {
+      "id": "train-eval",
+      "name": "Train 6 models, Tables 3-4, Figs 9-10",
+      "status": "done",
+      "verification": "python scripts/03_train_models.py",
+      "evidence": "Cross plots + metric tables; LSTM-COA best."
+    },
+    {
+      "id": "scoring",
+      "name": "Rank scoring + radar (Table 6, Fig 11)",
+      "status": "done",
+      "verification": "python scripts/04_evaluate.py",
+      "evidence": "Multi-metric rank totals; LSTM-COA top."
+    },
+    {
+      "id": "bootstrap",
+      "name": "Bootstrap test RMSE CIs (Table 5)",
+      "status": "done",
+      "verification": "python scripts/05_bootstrap.py",
+      "evidence": "2000 resamples, 95% percentile CIs."
+    },
+    {
+      "id": "shap",
+      "name": "SHAP interpretability (Fig 13)",
+      "status": "done",
+      "verification": "python scripts/06_shap.py",
+      "evidence": "Bee-swarm + mean|SHAP| over the 7 features."
+    },
+    {
+      "id": "sensitivity",
+      "name": "Generalizability scenarios (Fig 14)",
+      "status": "done",
+      "verification": "python scripts/07_sensitivity.py",
+      "evidence": "Well-level reconfiguration with boundary detection."
+    },
+    {
+      "id": "stage1-pso",
+      "name": "Stage-1 PSO structure search (Fig 7)",
+      "status": "optional",
+      "verification": "python scripts/00_stage1_structure.py",
+      "evidence": "Run via run_all.py --full."
+    },
+    {
+      "id": "recon-validation",
+      "name": "End-to-end validation: train on reconstruction vs SD (Fig 16)",
+      "status": "done",
+      "verification": "python scripts/09_recon_validation.py",
+      "evidence": "Identifies OPR denoising strength as the headline lever; recon LSTM hybrids reach ~2.7."
+    },
+    {
+      "id": "dual-target",
+      "name": "Dual-target reporting: denoised + raw OPR (Task 6)",
+      "status": "done",
+      "verification": "python scripts/10_dual_target.py",
+      "evidence": "Raw-OPR RMSE ~11 vs denoised ~5; headline accuracy is a denoising artifact."
+    },
+    {
+      "id": "optimizer-ablation",
+      "name": "Optimizer-lift ablation: budget vs Stage-2 (Task 5)",
+      "status": "done",
+      "verification": "python scripts/12_ablation.py",
+      "evidence": "Pure Stage-2 lift ~0; CNN overfits at 600ep; gap is the epoch budget."
+    },
+    {
+      "id": "seed-ensemble",
+      "name": "Seed ensembling + variance (Task 3)",
+      "status": "done",
+      "verification": "python scripts/11_seed_ensemble.py",
+      "evidence": "mean+/-std over 10 seeds + median ensemble; table4b_seed_variance, Fig 17."
+    },
+    {
+      "id": "regression-tests",
+      "name": "Regression tests (Task 7)",
+      "status": "done",
+      "verification": "pytest -q",
+      "evidence": "no-leakage, persistence floor 3.22, AR-doesn't-transfer, determinism."
+    }
+  ],
+  "known_limitations": [
+    "Honest blind-well floor is persistence ~3.22 (denoised) / 8.68 (raw); the paper's 2.15 needs heavier OPR denoising (disclosed) and the 'AR(3)=2.6' baseline is in-sample/leaky. See docs/REPRODUCTION_NOTES.md sec 8.",
+    "SD file decoded as date-aligned aggregation (AW=active-well count, OSH=sum hours, OPR=sum per-well rates); reconstruction fidelity r>=0.976 per feature.",
+    "Stage-2 metaheuristic (COA/PSO) is a no-op; hybrid>standalone gap is the epoch budget."
+  ]
+}

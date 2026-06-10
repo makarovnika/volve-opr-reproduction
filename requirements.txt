@@ -1,0 +1,23 @@
+# Core
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+openpyxl>=3.1
+
+# Modeling
+torch>=2.2
+scikit-learn>=1.4
+
+# Optimization / signal
+pymoo>=0.6.1
+PyWavelets>=1.6
+
+# Interpretability
+shap>=0.45
+
+# Plotting
+matplotlib>=3.8
+seaborn>=0.13
+
+# Utilities
+tqdm>=4.66
