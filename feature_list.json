@@ -115,6 +115,13 @@
       "evidence": "mean+/-std over 10 seeds + median ensemble; table4b_seed_variance, Fig 17."
     },
     {
+      "id": "denoise-production-impact",
+      "name": "Denoising impact on cumulative oil production (volume via OPR*OSH)",
+      "status": "done",
+      "verification": "python scripts/13_denoise_production_impact.py && pytest tests/test_production_identity.py",
+      "evidence": "3-well historical 9.67 Mm3 (60.8 Mbbl); code denoise shifts cumulative by +0.40% (245k bbl), SD file +0.89% on aggregated series; denoising redistributes at peaks/shut-ins, not the total. Artifacts (negatives, peak shaving) reported. REPRODUCTION_NOTES sec 9."
+    },
+    {
       "id": "regression-tests",
       "name": "Regression tests (Task 7)",
       "status": "done",

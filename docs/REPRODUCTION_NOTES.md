@@ -360,3 +360,32 @@ Separating the epoch budget from the Stage-2 metaheuristic:
   cherry-picking; the credible figure is the ensemble/mean.
 * The headline LSTM-COA = 5.14 sits inside its seed distribution (5.12 ± 0.07),
   confirming it is a typical, not cherry-picked, result.
+
+## 9. Denoising impact on cumulative oil production (`scripts/13_…`)
+
+OPR is a **rate** (`BORE_OIL_VOL / ON_STREAM_HRS`), so the denoising effect is
+expressed in **volume** via `oil(t) = OPR(t) × OSH(t)` and accumulated.
+Ground truth = `Σ BORE_OIL_VOL` (identity `OPR_raw×OSH = BORE_OIL_VOL` holds to
+4.6e-13). 3-well historical = **9.67 Mm³ ≈ 60.8 Mbbl** (≈ 96 % of Volve's
+~63 Mbbl — F-12/F-14/F-11 are the field's dominant producers).
+
+| variant | basis | denoising effect on cumulative oil |
+|---------|-------|-----------------------------------:|
+| **Code denoise** (`config.DENOISE`, per well, OSH raw) | true volume | **+0.40 %** (39 003 m³ ≈ 245 k bbl) |
+| ⤷ negatives clipped to 0 | true volume | +0.40 % (Δ ≈ 5 m³ — negligible) |
+| ⤷ OPR **and** OSH denoised | true volume | +0.42 % (40 646 m³) |
+| **SD file** (released, date-aggregated rate) | aggregated* | **+0.89 %** |
+
+\*the aggregated `OPR(Σrate)×OSH(Σhrs)` double-counts the multi-well cross term,
+so only the **delta/%** is meaningful there, not the absolute m³ — per-well true
+volumes are the Code-denoise rows.
+
+**Honest framing:** denoising **redistributes** the rate series, it does not
+remove barrels from the ground — the cumulative curves are visually identical
+(`cum_production_raw_vs_denoised.png`); the effect lives at the **peaks/shut-ins**
+(`step_delta_over_time.png`), e.g. F-12's largest single-step shave is ~1043 m³
+on 2008-11-28. The signed total is small (< 1 %) and partly cancels (some steps
+shaved, some lifted). The current `config.DENOISE` shaves peaks only mildly
+(F-12 1013→970, **1** negative OPR of −5 m³) — far less than the earlier
+over-smoothing soft denoise cited in `TASK_denoising_production_impact.md`
+(1285→423, 23 negatives), because the OPR denoise was retuned (§5b).

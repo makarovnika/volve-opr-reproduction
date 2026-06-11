@@ -54,6 +54,7 @@ python scripts/run_all.py --raw        # include it in the full run
 | Dual-target | `scripts/10_dual_target.py` | table4b_dual_target (metrics on denoised **and** raw OPR) |
 | Seed ensemble | `scripts/11_seed_ensemble.py` | Fig 17, table4b_seed_variance (mean±std + ensemble; `--full`) |
 | Optimizer ablation | `scripts/12_ablation.py` | table7_ablation (budget vs Stage-2 lift) |
+| Denoising → production | `scripts/13_denoise_production_impact.py` | denoise_production_impact{,_timeseries}, 3 cum/step figures |
 
 ## Layout
 

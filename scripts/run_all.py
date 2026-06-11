@@ -62,6 +62,7 @@ def main():
         _run("11 Seed ensemble + variance", step("11_seed_ensemble"))
     if RAW:
         _run("09 Reconstruction validation", step("09_recon_validation"))
+        _run("13 Denoising production impact", step("13_denoise_production_impact"))
     print("\nAll steps complete. See results/figures and results/tables.")
 
 

@@ -11,6 +11,8 @@ results/models/*.npz
 results/models/*.json
 # reconstructed xlsx, regenerable via scripts/00
 results/preprocessing/
+# large per-step table, regenerable via scripts/13
+results/tables/denoise_production_impact_timeseries.csv
 
 # OS / junk
 .DS_Store
