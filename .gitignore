@@ -14,6 +14,11 @@ results/preprocessing/
 # large per-step table, regenerable via scripts/13
 results/tables/denoise_production_impact_timeseries.csv
 
+# Stage-1 recompute subproject: large dataset copy (22.9 MB, from FFP 02) + logs
+stage1_recompute/input data/
+stage1_recompute/**/__pycache__/
+stage1_recompute/run_stage1.log
+
 # OS / junk
 .DS_Store
 Thumbs.db
