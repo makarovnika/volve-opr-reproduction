@@ -18,6 +18,9 @@ results/tables/denoise_production_impact_timeseries.csv
 stage1_recompute/input data/
 stage1_recompute/**/__pycache__/
 stage1_recompute/run_stage1.log
+# auto-regenerated with a fresh timestamp on every build_dataset() (churns);
+# its SHA + counts are recorded in docs/stage1_recompute_notes.md
+stage1_recompute/results/data_card.md
 
 # OS / junk
 .DS_Store
